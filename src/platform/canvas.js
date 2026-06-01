@@ -32,3 +32,35 @@ export function prefersReducedMotion() {
 export function isHighContrast() {
   return document.documentElement.classList.contains("game-contrast-high");
 }
+
+/**
+ * Keep a game canvas's backing store matched to how it's displayed. In immersive
+ * play the canvas fills the screen, so we size it to its on-screen box (×DPR,
+ * capped) and the game lays out to fill it — no more letterboxed board. Outside
+ * immersive it stays at the fixed authoring resolution. Re-fits on resize,
+ * orientation change, and when immersive toggles.
+ */
+export function makeResponsiveCanvas(canvas, baseWidth = 1200, baseHeight = 720, maxDpr = 2) {
+  const apply = () => {
+    if (document.body.classList.contains("kl-immersive")) {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      if (canvas.width !== w) canvas.width = w;
+      if (canvas.height !== h) canvas.height = h;
+    } else if (canvas.width !== baseWidth || canvas.height !== baseHeight) {
+      canvas.width = baseWidth;
+      canvas.height = baseHeight;
+    }
+  };
+  apply();
+  window.addEventListener("resize", apply);
+  window.addEventListener("orientationchange", apply);
+  new MutationObserver(apply).observe(document.body, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  return apply;
+}

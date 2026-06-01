@@ -1,52 +1,115 @@
 /**
- * On-screen controls + game-over overlay for the standalone site. Touch users
- * (and mouse) get buttons that dispatch the same `kl-game-*` events the games
- * already listen for, so the games stay keyboard-first but become fully playable
- * without a keyboard. Safe no-op if the control elements aren't present.
+ * On-screen controls for touch + mouse, an immersive/fullscreen play mode, and
+ * the game-over overlay. Everything fires the existing `kl-game-*` events, so
+ * the games stay keyboard-first but become first-class on a phone.
+ *
+ *   [data-kl-action="x"]   tap → one kl-game-action {action:x}
+ *   [data-kl-repeat="x"]   press-and-hold → repeats kl-game-action {action:x}
+ *   [data-kl-pause]        → kl-game-pause-toggle
+ *   [data-kl-restart]      → kl-game-replay
+ *   [data-kl-mute]         → toggle localStorage mute
+ *   [data-kl-fullscreen]   → enter immersive (CSS fullscreen + real FS where possible)
+ *   [data-kl-exit]         → leave immersive
+ *
+ * Safe no-op if the elements aren't present.
  */
 const MUTE_KEY = "kl.lab.muted";
+const REPEAT_MS = 90;
+const IMMERSIVE_CLASS = "kl-immersive";
 
 function fireAction(action) {
   window.dispatchEvent(new CustomEvent("kl-game-action", { detail: { action } }));
 }
 
-function syncMuteLabel(btn) {
-  const muted = localStorage.getItem(MUTE_KEY) === "1";
-  btn.setAttribute("aria-pressed", String(muted));
-  btn.textContent = muted ? "🔇 Muted" : "🔊 Sound";
-}
-
-export function wireControls() {
-  // Action buttons (left/right/rotate/drop/jump/sweep) → kl-game-action.
+function wireTap() {
   for (const btn of document.querySelectorAll("[data-kl-action]")) {
     btn.addEventListener("click", () => fireAction(btn.dataset.klAction));
   }
+}
 
-  document
-    .querySelector("[data-kl-pause]")
-    ?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("kl-game-pause-toggle")));
+function wireHold() {
+  for (const btn of document.querySelectorAll("[data-kl-repeat]")) {
+    let timer = null;
+    const stop = () => {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    btn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      fireAction(btn.dataset.klRepeat);
+      stop();
+      timer = setInterval(() => fireAction(btn.dataset.klRepeat), REPEAT_MS);
+    });
+    for (const ev of ["pointerup", "pointerleave", "pointercancel"]) {
+      btn.addEventListener(ev, stop);
+    }
+  }
+}
 
-  document
-    .querySelector("[data-kl-restart]")
-    ?.addEventListener("click", () => window.dispatchEvent(new CustomEvent("kl-game-replay")));
+function wireSystem() {
+  for (const b of document.querySelectorAll("[data-kl-pause]")) {
+    b.addEventListener("click", () => window.dispatchEvent(new CustomEvent("kl-game-pause-toggle")));
+  }
+  for (const b of document.querySelectorAll("[data-kl-restart]")) {
+    b.addEventListener("click", () => window.dispatchEvent(new CustomEvent("kl-game-replay")));
+  }
 
   const mute = document.querySelector("[data-kl-mute]");
   if (mute) {
-    syncMuteLabel(mute);
-    mute.addEventListener("click", () => {
+    const sync = () => {
       const muted = localStorage.getItem(MUTE_KEY) === "1";
-      localStorage.setItem(MUTE_KEY, muted ? "0" : "1");
-      syncMuteLabel(mute);
+      mute.setAttribute("aria-pressed", String(muted));
+      mute.title = muted ? "Muted" : "Sound on";
+    };
+    sync();
+    mute.addEventListener("click", () => {
+      localStorage.setItem(MUTE_KEY, localStorage.getItem(MUTE_KEY) === "1" ? "0" : "1");
+      sync();
     });
   }
+}
 
-  // Game-over overlay: the game dispatches `kl-game-over` on loss.
-  const over = document.getElementById("game-over");
-  if (over) {
-    window.addEventListener("kl-game-over", () => over.classList.remove("hidden"));
-    window.addEventListener("kl-game-replay", () => over.classList.add("hidden"));
-    over.querySelector("[data-kl-restart]")?.addEventListener("click", () => over.classList.add("hidden"));
+function setImmersive(on) {
+  document.body.classList.toggle(IMMERSIVE_CLASS, on);
+  if (on) {
+    document.documentElement.requestFullscreen?.().catch(() => {});
+    // best-effort landscape lock — only honored by some mobile browsers in FS
+    screen.orientation?.lock?.("landscape").catch(() => {});
+  } else if (document.fullscreenElement) {
+    document.exitFullscreen?.().catch(() => {});
+    screen.orientation?.unlock?.();
   }
+}
+
+function wireImmersive() {
+  for (const b of document.querySelectorAll("[data-kl-fullscreen]")) {
+    b.addEventListener("click", () => setImmersive(true));
+  }
+  for (const b of document.querySelectorAll("[data-kl-exit]")) {
+    b.addEventListener("click", () => setImmersive(false));
+  }
+  // If the OS leaves real fullscreen, drop the immersive class too.
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement) document.body.classList.remove(IMMERSIVE_CLASS);
+  });
+}
+
+function wireGameOver() {
+  const over = document.getElementById("game-over");
+  if (!over) return;
+  window.addEventListener("kl-game-over", () => over.classList.remove("hidden"));
+  window.addEventListener("kl-game-replay", () => over.classList.add("hidden"));
+  over.querySelector("[data-kl-restart]")?.addEventListener("click", () => over.classList.add("hidden"));
+}
+
+export function wireControls() {
+  wireTap();
+  wireHold();
+  wireSystem();
+  wireImmersive();
+  wireGameOver();
 }
 
 wireControls();

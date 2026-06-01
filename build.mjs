@@ -11,28 +11,56 @@ const GAMES = [
     slug: "kettletris", title: "Kettletris",
     blurb: "Stack the blocks, clear the lines, keep the pressure up.",
     controls: "← → move · ↑ rotate · ↓ / Space drop · P pause · R restart",
-    buttons: [
-      { action: "left", label: "◀", aria: "Move left" },
-      { action: "rotate", label: "⟳", aria: "Rotate" },
-      { action: "right", label: "▶", aria: "Move right" },
-      { action: "drop", label: "⤓ Drop", aria: "Hard drop" },
-    ],
+    pad: { dpad: true, face: [{ action: "rotate", key: "A", sub: "rotate" }, { action: "drop", key: "B", sub: "drop" }] },
   },
   {
     slug: "backlog", title: "Backlog",
     blurb: "Triage the queue before it overflows. Prioritize under pressure.",
     controls: "Drag / tap to sweep · Sweep button · P pause · R restart",
-    buttons: [{ action: "sweep", label: "Sweep", aria: "Sweep the queue" }],
+    pad: { dpad: false, face: [{ action: "sweep", key: "Sweep", wide: true }] },
   },
   {
     slug: "steamrunner", title: "SteamRunner",
     blurb: "Keep the line moving and time your jumps. Don't stall the boiler.",
     controls: "Space / tap jump · Enter start · P pause · R restart",
-    buttons: [{ action: "jump", label: "Jump", aria: "Jump" }],
+    pad: { dpad: false, face: [{ action: "jump", key: "Jump", wide: true }] },
   },
 ];
 
 const TARGET = "es2020";
+
+// On-screen gamepad: D-pad (left), system row (center), face buttons (right).
+function dpadHtml() {
+  return `        <div class="pad__dir" aria-label="Direction pad">
+          <button class="dpad dpad--up" type="button" data-kl-action="rotate" aria-label="Rotate">▲</button>
+          <button class="dpad dpad--left" type="button" data-kl-repeat="left" aria-label="Move left">◀</button>
+          <button class="dpad dpad--right" type="button" data-kl-repeat="right" aria-label="Move right">▶</button>
+          <button class="dpad dpad--down" type="button" data-kl-repeat="down" aria-label="Soft drop">▼</button>
+        </div>`;
+}
+function faceHtml(face) {
+  const btns = face
+    .map(
+      (f) =>
+        `          <button class="facebtn${f.wide ? " facebtn--wide" : ""}" type="button" data-kl-action="${f.action}" aria-label="${f.sub || f.key}"><b>${f.key}</b>${f.sub ? `<span>${f.sub}</span>` : ""}</button>`,
+    )
+    .join("\n");
+  return `        <div class="pad__face">\n${btns}\n        </div>`;
+}
+function padHtml(game) {
+  const dir = game.pad.dpad ? dpadHtml() : '        <div class="pad__dir pad__dir--empty"></div>';
+  return `      <div class="pad" role="group" aria-label="Game controls">
+${dir}
+        <div class="pad__sys">
+          <button class="sysbtn" type="button" data-kl-fullscreen aria-label="Play fullscreen">⛶</button>
+          <button class="sysbtn" type="button" data-kl-pause aria-label="Pause / resume">⏸</button>
+          <button class="sysbtn" type="button" data-kl-restart aria-label="Restart">↻</button>
+          <button class="sysbtn" type="button" data-kl-mute aria-pressed="false" aria-label="Sound">🔊</button>
+          <button class="sysbtn sysbtn--exit" type="button" data-kl-exit aria-label="Exit fullscreen">✕</button>
+        </div>
+${faceHtml(game.pad.face)}
+      </div>`;
+}
 
 function gamePage(game) {
   return `<!doctype html>
@@ -58,27 +86,21 @@ function gamePage(game) {
         <span>Level <b id="game-level">1</b></span>
         <span id="game-status">Ready</span>
       </div>
-      <div class="stage">
-        <canvas id="game-canvas" width="1200" height="720"></canvas>
-        <div id="game-start-overlay" class="overlay">
-          <button id="game-start-btn" class="btn" type="button">Start game</button>
-          <p>${game.controls}</p>
+      <div class="play">
+        <div class="stage">
+          <canvas id="game-canvas" width="1200" height="720"></canvas>
+          <div id="game-start-overlay" class="overlay">
+            <button id="game-start-btn" class="btn" type="button">Start game</button>
+            <p>${game.controls}</p>
+            <button class="btn btn--ghost" type="button" data-kl-fullscreen>⛶ Play fullscreen</button>
+          </div>
+          <div id="game-over" class="overlay hidden">
+            <p class="overlay__title">Game over</p>
+            <button class="btn" type="button" data-kl-restart>Play again</button>
+          </div>
+          <div id="game-feedback"></div>
         </div>
-        <div id="game-over" class="overlay hidden">
-          <p class="overlay__title">Game over</p>
-          <button class="btn" type="button" data-kl-restart>Play again</button>
-        </div>
-        <div id="game-feedback"></div>
-      </div>
-      <div class="cbar" role="group" aria-label="Game controls">
-        <div class="cbar__actions">
-${game.buttons.map((b) => `          <button class="cbtn" type="button" data-kl-action="${b.action}" aria-label="${b.aria}">${b.label}</button>`).join("\n")}
-        </div>
-        <div class="cbar__sys">
-          <button class="cbtn" type="button" data-kl-pause aria-label="Pause / resume">⏸ Pause</button>
-          <button class="cbtn" type="button" data-kl-restart aria-label="Restart">↻ Restart</button>
-          <button class="cbtn" type="button" data-kl-mute aria-pressed="false">🔊 Sound</button>
-        </div>
+${padHtml(game)}
       </div>
       <p class="controls">${game.controls}</p>
       <section class="scores">
