@@ -15,6 +15,11 @@ const DEFAULTS = {
   obstacleSpeedPerLevel: 0.22,
 };
 
+// The speeds above are tuned for this design width; obstacle motion is scaled by
+// the actual canvas width so difficulty (crossing time) is consistent on a narrow
+// phone canvas as on a wide desktop one.
+const REFERENCE_WIDTH = 1200;
+
 export const PLAYER = { x: 110, width: 26, height: 38 };
 
 export class SteamRunnerCore {
@@ -68,7 +73,8 @@ export class SteamRunnerCore {
       });
     }
     const speed =
-      this._config.obstacleBaseSpeed + (this.level - 1) * this._config.obstacleSpeedPerLevel;
+      (this._config.obstacleBaseSpeed + (this.level - 1) * this._config.obstacleSpeedPerLevel) *
+      (width / REFERENCE_WIDTH);
     for (const o of this.obstacles) o.x -= speed;
     this.obstacles = this.obstacles.filter((o) => o.x > -30);
 
