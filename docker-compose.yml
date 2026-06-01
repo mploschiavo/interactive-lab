@@ -1,0 +1,8 @@
+# Local: docker compose up  ->  http://localhost:8090/
+services:
+  interactive-lab:
+    build: .
+    image: interactive-lab:latest
+    ports:
+      - "8090:80"
+    restart: unless-stopped
