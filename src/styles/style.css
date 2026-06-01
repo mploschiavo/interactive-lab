@@ -1,0 +1,76 @@
+/* Kettle Logic Interactive Lab — self-contained dark theme, system fonts, no network. */
+:root {
+  --bg: #0b0f15;
+  --panel: #121821;
+  --line: rgba(255, 255, 255, 0.1);
+  --fg: #e8edf4;
+  --fg-dim: rgba(232, 237, 244, 0.62);
+  --copper: #d68b48;
+  --copper-bright: #ecaa66;
+  --teal: #5fd4c5;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1040px; margin: 0 auto; padding: 1.25rem 1.25rem 4rem; }
+
+.lab-bar { display: flex; align-items: center; justify-content: space-between; padding-block: 0.5rem 1rem; border-bottom: 1px solid var(--line); }
+.lab-brand { color: var(--fg); text-decoration: none; font-weight: 600; letter-spacing: -0.01em; }
+.lab-brand b { color: var(--copper-bright); }
+.lab-brand span { color: var(--fg-dim); }
+.lab-back { color: var(--teal); text-decoration: none; font: 500 0.85rem var(--mono); }
+.lab-back:hover { text-decoration: underline; }
+
+.game-title { font-size: clamp(1.6rem, 4vw, 2.3rem); letter-spacing: -0.02em; margin: 1.4rem 0 0.2rem; }
+.game-blurb { color: var(--fg-dim); margin: 0 0 1.2rem; max-width: 60ch; }
+
+.hud { display: flex; flex-wrap: wrap; gap: 1.2rem; font: 500 0.9rem var(--mono); color: var(--fg-dim); margin-bottom: 0.8rem; }
+.hud b { color: var(--fg); }
+
+.stage { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #06080c; }
+#game-canvas { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 720; }
+.overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.8rem; background: rgba(6, 8, 12, 0.66); backdrop-filter: blur(2px); text-align: center; padding: 1rem;
+}
+.overlay.hidden { display: none; }
+.overlay p { color: var(--fg-dim); font: 500 0.82rem var(--mono); margin: 0; max-width: 40ch; }
+#game-feedback { position: absolute; left: 0; right: 0; bottom: 0.6rem; text-align: center; font: 500 0.8rem var(--mono); color: var(--teal); pointer-events: none; }
+
+.btn {
+  appearance: none; border: 1px solid var(--copper); background: var(--copper); color: #1a1207;
+  font: 600 0.9rem var(--sans); padding: 0.6rem 1.1rem; border-radius: 999px; cursor: pointer; min-height: 44px;
+}
+.btn:hover { background: var(--copper-bright); border-color: var(--copper-bright); }
+.btn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+.controls { color: var(--fg-dim); font: 500 0.8rem var(--mono); margin: 0.8rem 0 0; }
+
+.scores { margin-top: 2rem; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+.scores h2 { font-size: 1rem; margin: 0 0 0.8rem; }
+.board { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.35rem; max-width: 420px; }
+.board li { display: flex; justify-content: space-between; gap: 1rem; font: 500 0.85rem var(--mono); color: var(--fg-dim); padding: 0.35rem 0.6rem; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.board li b { color: var(--fg); }
+.board li.empty { justify-content: center; }
+.scoreform { display: flex; gap: 0.6rem; flex-wrap: wrap; max-width: 420px; }
+.scoreform input {
+  flex: 1 1 auto; min-height: 44px; padding: 0.5rem 0.8rem; background: var(--panel); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 8px; font: inherit;
+}
+.scoreform input:focus-visible { outline: none; border-color: var(--copper); }
+
+.cards { display: grid; gap: 1rem; grid-template-columns: 1fr; margin-top: 1.6rem; }
+@media (min-width: 640px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+.card { display: block; text-decoration: none; color: var(--fg); border: 1px solid var(--line); border-radius: 14px; padding: 1.2rem; background: var(--panel); transition: border-color 0.18s ease, transform 0.18s ease; }
+.card:hover { border-color: var(--copper); transform: translateY(-2px); }
+.card h3 { margin: 0 0 0.4rem; color: var(--copper-bright); }
+.card p { margin: 0; color: var(--fg-dim); font-size: 0.9rem; }
+
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }

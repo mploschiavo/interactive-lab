@@ -1,8 +1,10 @@
-# Local: docker compose up  ->  http://localhost:8090/
 services:
   interactive-lab:
-    build: .
-    image: interactive-lab:latest
+    build: { context: ., dockerfile: Dockerfile }
+    image: ghcr.io/mploschiavo/interactive-lab:1.0.0
     ports:
-      - "8090:80"
+      - "8090:8080"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     restart: unless-stopped

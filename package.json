@@ -1,0 +1,21 @@
+{
+  "name": "interactive-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kettle Logic Interactive Lab — vanilla-JS canvas games with a testable core.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && python3 -m http.server 8000 --directory dist",
+    "test": "vitest run --coverage",
+    "lint": "eslint src build.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@vitest/coverage-v8": "^2.0.0",
+    "esbuild": "^0.23.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "vitest": "^2.0.0"
+  }
+}

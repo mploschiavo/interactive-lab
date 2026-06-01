@@ -1,58 +1,59 @@
 # Kettle Logic — Interactive Lab
 
 Small browser games we built for fun, and as a portfolio of how we build. Three
-vanilla-JS canvas games — **Kettletris**, **Backlog**, and **SteamRunner** — with
-a tiny shared runtime.
+vanilla-JS canvas games — **Kettletris**, **Backlog**, and **SteamRunner** — each
+split into a **testable, dependency-free logic core** and a thin browser adapter
+(canvas rendering + input).
 
-**Self-contained and privacy-friendly by design:** there is **no build step, no
-backend, no network access, and no keys/secrets**. High scores persist to the
-browser's `localStorage` only. Safe to host as a fully static site.
+**Privacy-friendly by design:** no backend, no network, no keys. High scores
+persist to the browser's `localStorage` only. The built site is fully static.
 
-## Run it
+## Layout
 
-It's static — just serve the folder (or open `index.html` directly):
-
-```bash
-python3 -m http.server 8000   # then open http://localhost:8000/
+```
+src/
+  core/        pure game logic — no DOM, no canvas, RNG injected (unit-tested)
+  games/       browser adapters — canvas rendering, input, animation loop
+  platform/    runtime.js → window.KLGameCommon (leaderboard, audio, HUD)
+  styles/      self-contained dark theme
+build.mjs      esbuild: bundles core+adapter per game, emits the static site
+tests/core/    Vitest unit tests for each game core
+deploy/k8s/    Deployment (2 replicas, probes, non-root) + Service
 ```
 
-## What's here
+## Develop
 
-| File | Purpose |
-|---|---|
-| `index.html` | launcher (game cards) |
-| `kettletris.html` / `backlog.html` / `steamrunner.html` | one page per game |
-| `kettletris.js` / `backlog.js` / `steamrunner.js` | the games (canvas) |
-| `lab-common.js` | minimal `window.KLGameCommon` runtime: localStorage leaderboard, optional beep, no-op telemetry — **no network** |
-| `style.css` | self-contained dark theme |
+```bash
+npm install
+npm run lint     # eslint
+npm test         # vitest unit tests on the cores, coverage-gated (90% / 85% branch)
+npm run build    # → dist/ (static site + dist/lab/*.js bundles)
+npm run dev      # build + serve dist/ on http://localhost:8000
+```
 
-## Controls
+## Run the built site
 
-Keyboard-first (also click **Start**). Arrow keys + Space, `P` to pause, `R` to
-restart. Each game shows its controls on the start overlay.
+`dist/` is static — serve it with any static host, or:
+
+```bash
+npm run build && python3 -m http.server 8000 --directory dist
+```
 
 ## Deploy
 
-It's a static site, so any static host works. Packaged for containers too:
-
 ```bash
-# Docker
-docker build -t interactive-lab . && docker run -p 8090:80 interactive-lab
-
-# Docker Compose  ->  http://localhost:8090/
-docker compose up
-
-# Kubernetes (microk8s / k8s)
-kubectl apply -f k8s.yaml
+docker build -t interactive-lab . && docker run -p 8090:8080 interactive-lab
+# or Kubernetes:
+kubectl apply -k deploy/k8s
 ```
 
-The image is a tiny nginx serving the static files — no build step, no runtime
-deps, no env/secrets.
+## This repo is the source of truth for the games
 
-## License / use
+The same game bundles power the lab on **[kettlelogic.com/lab](https://kettlelogic.com/lab/)**.
+The site vendors the built files (`dist/lab/lab-common.js` + `dist/lab/<game>.js`)
+into its own shell — so the games are maintained **here**, once. See
+[ARCHITECTURE.md](./ARCHITECTURE.md).
 
-© Kettle Logic. Authored by Kettle Logic; reuse permitted for the author.
+## License
 
----
-
-Live on the site: **[kettlelogic.com/lab](https://kettlelogic.com/lab/)**.
+MIT — see [LICENSE](./LICENSE).
