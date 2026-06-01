@@ -22,8 +22,14 @@ function fireAction(action) {
 }
 
 function wireTap() {
+  // pointerdown (not click) so taps register instantly on touch — `click` adds
+  // perceptible lag on phones, which made jumps feel early/late.
   for (const btn of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll("[data-kl-action]"))) {
-    btn.addEventListener("click", () => fireAction(btn.dataset.klAction));
+    btn.style.touchAction = "manipulation";
+    btn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      fireAction(btn.dataset.klAction);
+    });
   }
 }
 

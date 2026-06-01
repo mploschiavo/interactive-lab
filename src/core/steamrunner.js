@@ -5,13 +5,13 @@
  */
 
 const DEFAULTS = {
-  gravity: 0.62,
-  jumpVelocity: -11,
+  gravity: 0.5, // lower gravity = more hang time → forgiving jump timing
+  jumpVelocity: -12, // higher jump clears obstacles comfortably
   levelByScore: 260,
-  spawnBase: 52,
-  spawnFloor: 26,
+  spawnBase: 64, // sparser obstacles, especially early
+  spawnFloor: 32,
   spawnPerLevel: 2,
-  obstacleBaseSpeed: 3.6,
+  obstacleBaseSpeed: 3.2, // a touch gentler (also scaled by canvas width)
   obstacleSpeedPerLevel: 0.22,
 };
 
@@ -69,7 +69,7 @@ export class SteamRunnerCore {
       this.obstacles.push({
         x: width + 10,
         w: 16 + this._rng() * 20,
-        h: 20 + this._rng() * 36,
+        h: 16 + this._rng() * 26,
       });
     }
     const speed =
