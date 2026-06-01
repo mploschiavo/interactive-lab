@@ -74,12 +74,12 @@ function wireSystem() {
 function setImmersive(on) {
   document.body.classList.toggle(IMMERSIVE_CLASS, on);
   if (on) {
+    // Go fullscreen in whatever orientation the device is held; the layout
+    // adapts to portrait/landscape and re-flows when the user rotates. (We do
+    // NOT lock orientation — that forced an unwanted auto-rotate to landscape.)
     document.documentElement.requestFullscreen?.().catch(() => {});
-    // best-effort landscape lock — only honored by some mobile browsers in FS
-    screen.orientation?.lock?.("landscape").catch(() => {});
   } else if (document.fullscreenElement) {
     document.exitFullscreen?.().catch(() => {});
-    screen.orientation?.unlock?.();
   }
 }
 
