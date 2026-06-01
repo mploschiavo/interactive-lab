@@ -28,6 +28,23 @@ const GAMES = [
 ];
 
 const TARGET = "es2020";
+// Public canonical home of the games (the standalone build can be hosted anywhere,
+// but these pages also live at kettlelogic.com/lab).
+const SITE = "https://kettlelogic.com/lab";
+
+function socialMeta(title, description, canonical) {
+  return `    <meta name="theme-color" content="#0b0f15" />
+    <link rel="canonical" href="${canonical}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="./og.png" />
+    <meta property="og:url" content="${canonical}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title}" />
+    <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:image" content="./og.png" />`;
+}
 
 // On-screen gamepad: D-pad (left), system row (center), face buttons (right).
 function dpadHtml() {
@@ -70,6 +87,7 @@ function gamePage(game) {
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>${game.title} — Kettle Logic Lab</title>
     <meta name="description" content="${game.title} — ${game.blurb} Play it in your browser; scores stay local." />
+${socialMeta(`${game.title} — Kettle Logic Lab`, `${game.title} — ${game.blurb}`, `${SITE}/${game.slug}/`)}
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
   </head>
@@ -131,6 +149,7 @@ function indexPage() {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Kettle Logic — Interactive Lab</title>
     <meta name="description" content="Small browser games from Kettle Logic. Vanilla JS, no backend, scores stay local." />
+${socialMeta("Kettle Logic — Interactive Lab", "Small browser games from Kettle Logic. Vanilla JS, no backend, scores stay local.", `${SITE}/`)}
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
   </head>
@@ -185,6 +204,8 @@ async function main() {
 
   await copyFile("src/styles/style.css", "dist/style.css");
   await copyFile("favicon.svg", "dist/favicon.svg");
+  await copyFile("src/og.png", "dist/og.png");
+  await writeFile("dist/robots.txt", "User-agent: *\nAllow: /\n");
   await writeFile("dist/index.html", indexPage());
   for (const game of GAMES) await writeFile(`dist/${game.slug}.html`, gamePage(game));
 
