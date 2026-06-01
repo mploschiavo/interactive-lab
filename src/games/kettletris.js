@@ -15,7 +15,7 @@ import { GameLoop } from "../platform/loop.js";
 const GAME = "kettletris";
 
 (function start() {
-  const canvas = document.getElementById("game-canvas");
+  const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("game-canvas"));
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   makeResponsiveCanvas(canvas);

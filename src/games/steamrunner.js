@@ -10,7 +10,7 @@ const GAME = "steamrunner";
 const STREAK_EVERY = 150;
 
 (function start() {
-  const canvas = document.getElementById("game-canvas");
+  const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("game-canvas"));
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   makeResponsiveCanvas(canvas);

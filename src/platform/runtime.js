@@ -73,7 +73,7 @@ function beep(freq) {
 function wire(game, scoreFn) {
   renderBoard(game);
   const form = byId("score-form");
-  const nameInput = byId("score-name");
+  const nameInput = /** @type {HTMLInputElement | null} */ (byId("score-name"));
   if (form) {
     form.addEventListener("submit", (event) => {
       event.preventDefault();

@@ -25,11 +25,17 @@ deploy/k8s/    Deployment (2 replicas, probes, non-root) + Service
 
 ```bash
 npm install
-npm run lint     # eslint
-npm test         # vitest unit tests on the cores, coverage-gated (90% / 85% branch)
-npm run build    # → dist/ (static site + dist/lab/*.js bundles)
-npm run dev      # build + serve dist/ on http://localhost:8000
+npm run lint       # eslint
+npm run typecheck  # tsc --checkJs (types via JSDoc; no build emitted)
+npm test           # vitest unit tests on the cores, coverage-gated (90% / 85% branch)
+npm run test:e2e   # playwright: loads each game (desktop + mobile), drives controls
+npm run build      # → dist/ (static site + dist/lab/*.js bundles)
+npm run dev        # build + serve dist/ on http://localhost:8000
 ```
+
+CI (`.github/workflows/ci.yml`) runs lint + typecheck + unit + build + e2e on every
+push/PR (Actions pinned by commit SHA). Pushing a `vX.Y.Z` tag triggers
+`release.yml`: builds + pushes the image to GHCR and cuts a GitHub release.
 
 ## Run the built site
 

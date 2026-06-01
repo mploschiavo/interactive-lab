@@ -2,6 +2,8 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    // Unit tests only (*.test.js); the Playwright e2e specs (*.spec.js) run separately.
+    include: ["tests/**/*.test.js"],
     coverage: {
       provider: "v8",
       // The pure game logic is unit-tested here; the browser adapters

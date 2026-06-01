@@ -22,13 +22,13 @@ function fireAction(action) {
 }
 
 function wireTap() {
-  for (const btn of document.querySelectorAll("[data-kl-action]")) {
+  for (const btn of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll("[data-kl-action]"))) {
     btn.addEventListener("click", () => fireAction(btn.dataset.klAction));
   }
 }
 
 function wireHold() {
-  for (const btn of document.querySelectorAll("[data-kl-repeat]")) {
+  for (const btn of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll("[data-kl-repeat]"))) {
     let timer = null;
     const stop = () => {
       if (timer) {
@@ -56,7 +56,7 @@ function wireSystem() {
     b.addEventListener("click", () => window.dispatchEvent(new CustomEvent("kl-game-replay")));
   }
 
-  const mute = document.querySelector("[data-kl-mute]");
+  const mute = /** @type {HTMLElement | null} */ (document.querySelector("[data-kl-mute]"));
   if (mute) {
     const sync = () => {
       const muted = localStorage.getItem(MUTE_KEY) === "1";

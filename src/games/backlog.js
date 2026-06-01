@@ -10,7 +10,7 @@ const GAME = "backlog";
 const STREAK_EVERY = 80;
 
 (function start() {
-  const canvas = document.getElementById("game-canvas");
+  const canvas = /** @type {HTMLCanvasElement} */ (document.getElementById("game-canvas"));
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   makeResponsiveCanvas(canvas);
