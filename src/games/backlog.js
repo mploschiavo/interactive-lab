@@ -3,7 +3,7 @@
  * in `BacklogCore`. Bundled to `backlog.js`.
  */
 import { BacklogCore } from "../core/backlog.js";
-import { roundedRect, isLightTheme as isLight, isHighContrast } from "../platform/canvas.js";
+import { roundedRect, isLightTheme as isLight, isHighContrast, makeResponsiveCanvas } from "../platform/canvas.js";
 import { GameLoop } from "../platform/loop.js";
 
 const GAME = "backlog";
@@ -13,6 +13,7 @@ const STREAK_EVERY = 80;
   const canvas = document.getElementById("game-canvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
+  makeResponsiveCanvas(canvas);
   const common = window.KLGameCommon || {};
   const status = document.getElementById("game-status");
   const scoreEl = document.getElementById("game-score");

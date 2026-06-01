@@ -3,7 +3,7 @@
  * rules live in `SteamRunnerCore`. Bundled to `steamrunner.js`.
  */
 import { SteamRunnerCore, PLAYER } from "../core/steamrunner.js";
-import { roundedRect, isLightTheme as isLight, isHighContrast } from "../platform/canvas.js";
+import { roundedRect, isLightTheme as isLight, isHighContrast, makeResponsiveCanvas } from "../platform/canvas.js";
 import { GameLoop } from "../platform/loop.js";
 
 const GAME = "steamrunner";
@@ -13,6 +13,7 @@ const STREAK_EVERY = 150;
   const canvas = document.getElementById("game-canvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
+  makeResponsiveCanvas(canvas);
   const common = window.KLGameCommon || {};
   const status = document.getElementById("game-status");
   const scoreEl = document.getElementById("game-score");
@@ -20,7 +21,8 @@ const STREAK_EVERY = 150;
   const startOverlay = document.getElementById("game-start-overlay");
 
   document.body.dataset.game = GAME;
-  const ground = Math.max(250, canvas.height - 90);
+  // Recomputed each frame so the runner adapts when the canvas resizes (immersive).
+  let ground = Math.max(250, canvas.height - 90);
   const redrawBoard = common.wire ? common.wire(GAME, () => core.score) : () => {};
   const flash = common.ui?.flash || (() => {});
   const feedback = common.ui?.feedback || (() => {});
@@ -119,6 +121,8 @@ const STREAK_EVERY = 150;
   const rrect = (px, py, w, h, r) => roundedRect(ctx, px, py, w, h, r);
 
   function loop() {
+    ground = Math.max(250, canvas.height - 90);
+    core.ground = ground;
     const col = palette();
     const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
     sky.addColorStop(0, col.sky0);

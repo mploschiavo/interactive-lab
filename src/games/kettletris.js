@@ -9,7 +9,7 @@ import {
   WIDTH as W,
   HEIGHT as H,
 } from "../core/kettletris.js";
-import { roundedRect, isLightTheme as isLight, isHighContrast, prefersReducedMotion } from "../platform/canvas.js";
+import { roundedRect, isLightTheme as isLight, isHighContrast, prefersReducedMotion, makeResponsiveCanvas } from "../platform/canvas.js";
 import { GameLoop } from "../platform/loop.js";
 
 const GAME = "kettletris";
@@ -18,6 +18,7 @@ const GAME = "kettletris";
   const canvas = document.getElementById("game-canvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
+  makeResponsiveCanvas(canvas);
   const common = window.KLGameCommon || {};
   const status = document.getElementById("game-status");
   const scoreEl = document.getElementById("game-score");
@@ -138,18 +139,38 @@ const GAME = "kettletris";
   }
 
   // ---------- rendering ----------
+  // Responsive layout. Portrait → the NEXT/LINES rail is a strip ACROSS THE TOP
+  // so the board uses the full width; landscape → the rail sits on the RIGHT.
   function boardMetrics() {
-    const minPad = 34;
-    const gap = Math.round(canvas.height * 0.04);
+    const minPad = Math.max(16, Math.round(Math.min(canvas.width, canvas.height) * 0.04));
+    const gap = Math.max(10, Math.round(canvas.height * 0.03));
+    if (canvas.height > canvas.width) {
+      const railH = Math.max(54, Math.round(canvas.height * 0.11));
+      const availW = canvas.width - minPad * 2;
+      const availH = canvas.height - minPad * 2 - railH - gap;
+      const cell = Math.max(16, Math.min(Math.floor(availW / W), Math.floor(availH / H)));
+      const boardW = W * cell;
+      const boardH = H * cell;
+      const groupH = railH + gap + boardH;
+      const top = Math.floor((canvas.height - groupH) / 2);
+      const ox = Math.floor((canvas.width - boardW) / 2);
+      return {
+        cell, ox, boardW, boardH, gap, portrait: true,
+        oy: top + railH + gap,
+        rail: { x: ox, y: top, w: boardW, h: railH },
+      };
+    }
     const cellH = Math.floor((canvas.height - minPad * 2) / H);
-    const cell = Math.max(20, Math.min(cellH, Math.floor((canvas.width - minPad * 2 - gap) / (W + 4.6))));
+    const cell = Math.max(18, Math.min(cellH, Math.floor((canvas.width - minPad * 2 - gap) / (W + 4.6))));
     const boardW = W * cell;
     const boardH = H * cell;
     const railW = Math.round(cell * 4.2);
-    const groupW = boardW + gap + railW;
-    const ox = Math.floor((canvas.width - groupW) / 2);
+    const ox = Math.floor((canvas.width - (boardW + gap + railW)) / 2);
     const oy = Math.floor((canvas.height - boardH) / 2);
-    return { cell, ox, oy, boardW, boardH, railX: ox + boardW + gap, railW, gap };
+    return {
+      cell, ox, oy, boardW, boardH, gap, portrait: false,
+      rail: { x: ox + boardW + gap, y: oy, w: railW, h: boardH },
+    };
   }
 
   function palette() {
@@ -199,6 +220,67 @@ const GAME = "kettletris";
     ctx.stroke();
   }
 
+  // NEXT + LINES panel. Portrait → horizontal strip on top; landscape → right rail.
+  function renderRail(L, col) {
+    const { rail } = L;
+    const nm = SHAPES[core.nextIndex];
+    const ncolor = SHAPE_COLORS[core.nextIndex % SHAPE_COLORS.length];
+    rrect(rail.x, rail.y, rail.w, rail.h, 16);
+    ctx.fillStyle = col.rail;
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = col.railLine;
+    ctx.globalAlpha = 0.6;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = col.dim;
+    ctx.textBaseline = "alphabetic";
+
+    if (L.portrait) {
+      const padX = rail.h * 0.34;
+      const labelSize = Math.max(11, Math.round(rail.h * 0.2));
+      const rcell = Math.min(Math.round(rail.h * 0.3), Math.round(L.cell * 0.7));
+      ctx.font = `600 ${labelSize}px ui-monospace, monospace`;
+      ctx.fillText("NEXT", rail.x + padX, rail.y + rail.h * 0.4);
+      for (let y = 0; y < nm.length; y++)
+        for (let cx = 0; cx < nm[0].length; cx++)
+          if (nm[y][cx]) tile(rail.x + padX + cx * rcell, rail.y + rail.h * 0.46 + y * rcell, rcell, ncolor, {});
+      ctx.textAlign = "right";
+      ctx.fillStyle = col.dim;
+      ctx.font = `600 ${labelSize}px ui-monospace, monospace`;
+      ctx.fillText("LINES", rail.x + rail.w - padX, rail.y + rail.h * 0.4);
+      ctx.fillStyle = col.label;
+      ctx.font = `700 ${Math.round(rail.h * 0.4)}px ui-monospace, monospace`;
+      ctx.fillText(String(core.lines), rail.x + rail.w - padX, rail.y + rail.h * 0.86);
+      ctx.textAlign = "left";
+      return;
+    }
+
+    const cell = L.cell;
+    const rcell = Math.round(cell * 0.74);
+    ctx.font = `600 ${Math.round(cell * 0.3)}px ui-monospace, monospace`;
+    ctx.fillText("NEXT", rail.x + rail.w * 0.16, rail.y + cell * 0.9);
+    const nw = nm[0].length * rcell;
+    const npx = rail.x + (rail.w - nw) / 2;
+    const npy = rail.y + rail.h * 0.18;
+    for (let y = 0; y < nm.length; y++)
+      for (let cx = 0; cx < nm[0].length; cx++)
+        if (nm[y][cx]) tile(npx + cx * rcell, npy + y * rcell, rcell, ncolor, {});
+    ctx.strokeStyle = col.railLine;
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.moveTo(rail.x + rail.w * 0.14, rail.y + rail.h * 0.56);
+    ctx.lineTo(rail.x + rail.w * 0.86, rail.y + rail.h * 0.56);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = col.dim;
+    ctx.font = `600 ${Math.round(cell * 0.3)}px ui-monospace, monospace`;
+    ctx.fillText("LINES", rail.x + rail.w * 0.16, rail.y + rail.h * 0.7);
+    ctx.fillStyle = col.label;
+    ctx.font = `700 ${Math.round(cell * 0.92)}px ui-monospace, monospace`;
+    ctx.fillText(String(core.lines), rail.x + rail.w * 0.16, rail.y + rail.h * 0.86);
+  }
+
   function draw(t) {
     const drop = Math.max(120, 360 - (core.level - 1) * 24);
     if (t && t - last > (started ? drop : 320)) {
@@ -212,7 +294,8 @@ const GAME = "kettletris";
       }
     }
     const col = palette();
-    const { ox, oy, cell, boardW, boardH, railX, railW } = boardMetrics();
+    const L = boardMetrics();
+    const { ox, oy, cell, boardW, boardH } = L;
 
     const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
     bg.addColorStop(0, col.bg0);
@@ -285,41 +368,7 @@ const GAME = "kettletris";
     }
     ctx.restore();
 
-    const ry = oy - pad;
-    const rh = boardH + pad * 2;
-    const rcell = Math.round(cell * 0.74);
-    rrect(railX, ry, railW, rh, 16);
-    ctx.fillStyle = col.rail;
-    ctx.fill();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = col.railLine;
-    ctx.globalAlpha = 0.6;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = col.dim;
-    ctx.font = `600 ${Math.round(cell * 0.3)}px ui-monospace, monospace`;
-    ctx.textBaseline = "alphabetic";
-    ctx.fillText("NEXT", railX + railW * 0.16, ry + cell * 0.9);
-    const nm = SHAPES[core.nextIndex];
-    const nw = nm[0].length * rcell;
-    const npx = railX + (railW - nw) / 2;
-    const npy = ry + rh * 0.18;
-    for (let y = 0; y < nm.length; y++)
-      for (let cx = 0; cx < nm[0].length; cx++) if (nm[y][cx]) tile(npx + cx * rcell, npy + y * rcell, rcell, SHAPE_COLORS[core.nextIndex % SHAPE_COLORS.length], {});
-    ctx.strokeStyle = col.railLine;
-    ctx.globalAlpha = 0.35;
-    ctx.beginPath();
-    ctx.moveTo(railX + railW * 0.14, ry + rh * 0.56);
-    ctx.lineTo(railX + railW * 0.86, ry + rh * 0.56);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = col.dim;
-    ctx.font = `600 ${Math.round(cell * 0.3)}px ui-monospace, monospace`;
-    ctx.fillText("LINES", railX + railW * 0.16, ry + rh * 0.7);
-    ctx.fillStyle = col.label;
-    ctx.font = `700 ${Math.round(cell * 0.92)}px ui-monospace, monospace`;
-    ctx.fillText(String(core.lines), railX + railW * 0.16, ry + rh * 0.86);
-
+    renderRail(L, col);
     ctx.restore();
   }
 

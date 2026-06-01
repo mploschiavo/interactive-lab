@@ -132,7 +132,7 @@ body.kl-immersive .stage {
   flex: 1 1 auto; min-height: 0; border: 0; border-radius: 0; background: #06070a;
   display: flex; align-items: center; justify-content: center;
 }
-body.kl-immersive #game-canvas { width: auto; height: auto; max-width: 100%; max-height: 100%; }
+body.kl-immersive #game-canvas { width: 100%; height: 100%; display: block; }
 body.kl-immersive .pad {
   flex: 0 0 auto; margin: 0; padding: 0.7rem 1rem;
   padding-bottom: calc(0.7rem + env(safe-area-inset-bottom));
@@ -146,6 +146,22 @@ body.kl-immersive .dpad { width: 54px; height: 54px; }
 body.kl-immersive .dpad--up, body.kl-immersive .dpad--down { left: 57px; }
 body.kl-immersive .dpad--left, body.kl-immersive .dpad--right { top: 57px; }
 body.kl-immersive .facebtn { min-width: 76px; min-height: 76px; }
+
+/* Landscape immersive = handheld layout: canvas fills the full height, the
+   controls float over the empty side margins instead of a bottom bar. */
+@media (orientation: landscape) {
+  body.kl-immersive .pad {
+    position: absolute; inset: 0; margin: 0; padding: 0;
+    background: none; border: 0; backdrop-filter: none;
+    display: block; pointer-events: none;
+  }
+  body.kl-immersive .pad > * { position: absolute; pointer-events: auto; }
+  body.kl-immersive .pad__dir { left: 1.1rem; bottom: 1.1rem; }
+  body.kl-immersive .pad__face { right: 1.1rem; bottom: 1.1rem; }
+  body.kl-immersive .pad__sys {
+    top: 0.6rem; right: 0.8rem; flex-direction: row; background: none;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .sysbtn, .facebtn { transition: none; }
