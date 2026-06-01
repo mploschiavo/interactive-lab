@@ -3,6 +3,8 @@
  * rules live in `SteamRunnerCore`. Bundled to `steamrunner.js`.
  */
 import { SteamRunnerCore, PLAYER } from "../core/steamrunner.js";
+import { roundedRect, isLightTheme as isLight, isHighContrast } from "../platform/canvas.js";
+import { GameLoop } from "../platform/loop.js";
 
 const GAME = "steamrunner";
 const STREAK_EVERY = 150;
@@ -51,6 +53,7 @@ const STREAK_EVERY = 150;
     status.textContent = "You lost.";
     feedback("Crash detected. Want to play again? Press Play Again.");
     redrawBoard();
+    window.dispatchEvent(new CustomEvent("kl-game-over"));
   }
 
   function jump() {
@@ -105,28 +108,15 @@ const STREAK_EVERY = 150;
   }
 
   // ---------- rendering ----------
-  function isLight() {
-    const mode = document.documentElement.getAttribute("data-theme") || "system";
-    return mode === "light" || (mode === "system" && window.matchMedia?.("(prefers-color-scheme: light)").matches);
-  }
   function palette() {
-    const hc = document.documentElement.classList.contains("game-contrast-high");
+    const hc = isHighContrast();
     if (hc)
       return { sky0: "#000", sky1: "#000", frame: "#fff", ground: "#111", groundLine: "#fff", player: "#fff", playerGlow: "rgba(255,255,255,.6)", obs: "#facc15", obsTop: "#fde68a", glow: "rgba(250,204,21,.9)", label: "#fff", dim: "rgba(255,255,255,.85)" };
     if (isLight())
       return { sky0: "#eaf0f8", sky1: "#d6deea", frame: "rgba(214,139,72,.4)", ground: "#cbd5e6", groundLine: "rgba(214,139,72,.6)", player: "#2fb5a4", playerGlow: "rgba(47,181,164,.5)", obs: "#d68b48", obsTop: "#ecaa66", glow: "rgba(214,139,72,.4)", label: "#0f172a", dim: "rgba(15,23,42,.55)" };
     return { sky0: "#0c121b", sky1: "#070a10", frame: "rgba(95,212,197,.3)", ground: "#0e151e", groundLine: "rgba(95,212,197,.45)", player: "#5fd4c5", playerGlow: "rgba(95,212,197,.55)", obs: "#ecaa66", obsTop: "#f5c451", glow: "rgba(236,170,102,.5)", label: "#e8edf4", dim: "rgba(232,237,244,.55)" };
   }
-  function rrect(px, py, w, h, r) {
-    const rad = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(px + rad, py);
-    ctx.arcTo(px + w, py, px + w, py + h, rad);
-    ctx.arcTo(px + w, py + h, px, py + h, rad);
-    ctx.arcTo(px, py + h, px, py, rad);
-    ctx.arcTo(px, py, px + w, py, rad);
-    ctx.closePath();
-  }
+  const rrect = (px, py, w, h, r) => roundedRect(ctx, px, py, w, h, r);
 
   function loop() {
     const col = palette();
@@ -226,8 +216,6 @@ const STREAK_EVERY = 150;
     pg.addColorStop(1, "rgba(0,0,0,.22)");
     ctx.fillStyle = pg;
     ctx.fill();
-
-    requestAnimationFrame(loop);
   }
 
   startBtn?.addEventListener("click", () => {
@@ -239,5 +227,5 @@ const STREAK_EVERY = 150;
   });
 
   reset();
-  loop();
+  new GameLoop(canvas).run(loop);
 })();

@@ -7,9 +7,29 @@ import { build } from "esbuild";
 import { mkdir, rm, copyFile, writeFile } from "node:fs/promises";
 
 const GAMES = [
-  { slug: "kettletris", title: "Kettletris", blurb: "Stack the blocks, clear the lines, keep the pressure up.", controls: "← → move · ↑ rotate · ↓ / Space drop · P pause · R restart" },
-  { slug: "backlog", title: "Backlog", blurb: "Triage the queue before it overflows. Prioritize under pressure.", controls: "Drag / tap to sweep · Sweep button · P pause · R restart" },
-  { slug: "steamrunner", title: "SteamRunner", blurb: "Keep the line moving and time your jumps. Don't stall the boiler.", controls: "Space / tap jump · Enter start · P pause · R restart" },
+  {
+    slug: "kettletris", title: "Kettletris",
+    blurb: "Stack the blocks, clear the lines, keep the pressure up.",
+    controls: "← → move · ↑ rotate · ↓ / Space drop · P pause · R restart",
+    buttons: [
+      { action: "left", label: "◀", aria: "Move left" },
+      { action: "rotate", label: "⟳", aria: "Rotate" },
+      { action: "right", label: "▶", aria: "Move right" },
+      { action: "drop", label: "⤓ Drop", aria: "Hard drop" },
+    ],
+  },
+  {
+    slug: "backlog", title: "Backlog",
+    blurb: "Triage the queue before it overflows. Prioritize under pressure.",
+    controls: "Drag / tap to sweep · Sweep button · P pause · R restart",
+    buttons: [{ action: "sweep", label: "Sweep", aria: "Sweep the queue" }],
+  },
+  {
+    slug: "steamrunner", title: "SteamRunner",
+    blurb: "Keep the line moving and time your jumps. Don't stall the boiler.",
+    controls: "Space / tap jump · Enter start · P pause · R restart",
+    buttons: [{ action: "jump", label: "Jump", aria: "Jump" }],
+  },
 ];
 
 const TARGET = "es2020";
@@ -44,7 +64,21 @@ function gamePage(game) {
           <button id="game-start-btn" class="btn" type="button">Start game</button>
           <p>${game.controls}</p>
         </div>
+        <div id="game-over" class="overlay hidden">
+          <p class="overlay__title">Game over</p>
+          <button class="btn" type="button" data-kl-restart>Play again</button>
+        </div>
         <div id="game-feedback"></div>
+      </div>
+      <div class="cbar" role="group" aria-label="Game controls">
+        <div class="cbar__actions">
+${game.buttons.map((b) => `          <button class="cbtn" type="button" data-kl-action="${b.action}" aria-label="${b.aria}">${b.label}</button>`).join("\n")}
+        </div>
+        <div class="cbar__sys">
+          <button class="cbtn" type="button" data-kl-pause aria-label="Pause / resume">⏸ Pause</button>
+          <button class="cbtn" type="button" data-kl-restart aria-label="Restart">↻ Restart</button>
+          <button class="cbtn" type="button" data-kl-mute aria-pressed="false">🔊 Sound</button>
+        </div>
       </div>
       <p class="controls">${game.controls}</p>
       <section class="scores">
@@ -58,6 +92,7 @@ function gamePage(game) {
     </div>
     <script src="./lab/lab-common.js"></script>
     <script src="./lab/${game.slug}.js"></script>
+    <script src="./lab/controls.js"></script>
   </body>
 </html>
 `;
@@ -101,6 +136,15 @@ async function main() {
   await build({
     entryPoints: GAMES.map((g) => `src/games/${g.slug}.js`),
     outdir: "dist/lab",
+    bundle: true,
+    format: "iife",
+    target: TARGET,
+    minify: true,
+    legalComments: "none",
+  });
+  await build({
+    entryPoints: ["src/platform/controls.js"],
+    outfile: "dist/lab/controls.js",
     bundle: true,
     format: "iife",
     target: TARGET,

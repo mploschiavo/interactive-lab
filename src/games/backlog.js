@@ -3,6 +3,8 @@
  * in `BacklogCore`. Bundled to `backlog.js`.
  */
 import { BacklogCore } from "../core/backlog.js";
+import { roundedRect, isLightTheme as isLight, isHighContrast } from "../platform/canvas.js";
+import { GameLoop } from "../platform/loop.js";
 
 const GAME = "backlog";
 const STREAK_EVERY = 80;
@@ -47,6 +49,7 @@ const STREAK_EVERY = 80;
     status.textContent = "You lost.";
     feedback("Overflow hit the ceiling. Want to play again? Press Play Again.");
     redrawBoard();
+    window.dispatchEvent(new CustomEvent("kl-game-over"));
   }
 
   function toCanvas(clientX, clientY) {
@@ -115,28 +118,15 @@ const STREAK_EVERY = 80;
   });
 
   // ---------- rendering ----------
-  function isLight() {
-    const mode = document.documentElement.getAttribute("data-theme") || "system";
-    return mode === "light" || (mode === "system" && window.matchMedia?.("(prefers-color-scheme: light)").matches);
-  }
   function palette() {
-    const hc = document.documentElement.classList.contains("game-contrast-high");
+    const hc = isHighContrast();
     if (hc)
       return { bg0: "#000", bg1: "#000", frame: "#fff", orb: "#facc15", orbCore: "#fff", glow: "rgba(250,204,21,.9)", label: "#fff", dim: "rgba(255,255,255,.8)", meterOk: "#34d399", meterHot: "#fb7185", track: "rgba(255,255,255,.18)" };
     if (isLight())
       return { bg0: "#eef1f6", bg1: "#dde3ee", frame: "rgba(214,139,72,.45)", orb: "#d68b48", orbCore: "#fbe3c8", glow: "rgba(214,139,72,.35)", label: "#0f172a", dim: "rgba(15,23,42,.55)", meterOk: "#2fb5a4", meterHot: "#e11d48", track: "rgba(15,23,42,.12)" };
     return { bg0: "#0b0f15", bg1: "#06080c", frame: "rgba(95,212,197,.32)", orb: "#ecaa66", orbCore: "#fbe3c8", glow: "rgba(236,170,102,.45)", label: "#e8edf4", dim: "rgba(232,237,244,.55)", meterOk: "#5fd4c5", meterHot: "#fb7185", track: "rgba(255,255,255,.12)" };
   }
-  function rrect(px, py, w, h, r) {
-    const rad = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(px + rad, py);
-    ctx.arcTo(px + w, py, px + w, py + h, rad);
-    ctx.arcTo(px + w, py + h, px, py + h, rad);
-    ctx.arcTo(px, py + h, px, py, rad);
-    ctx.arcTo(px, py, px + w, py, rad);
-    ctx.closePath();
-  }
+  const rrect = (px, py, w, h, r) => roundedRect(ctx, px, py, w, h, r);
   function backdrop(col) {
     const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
     bg.addColorStop(0, col.bg0);
@@ -217,7 +207,6 @@ const STREAK_EVERY = 80;
     ctx.font = "600 14px ui-monospace, monospace";
     ctx.fillText(started ? "Sweep the pointer to clear tasks" : "Preview running…", 34, canvas.height - 28);
     if (!core.lost) status.textContent = `Overflow ${core.overflow}`;
-    requestAnimationFrame(loop);
   }
 
   startBtn?.addEventListener("click", () => {
@@ -229,5 +218,5 @@ const STREAK_EVERY = 80;
   });
 
   reset();
-  loop();
+  new GameLoop(canvas).run(loop);
 })();

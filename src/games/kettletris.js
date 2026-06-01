@@ -9,6 +9,8 @@ import {
   WIDTH as W,
   HEIGHT as H,
 } from "../core/kettletris.js";
+import { roundedRect, isLightTheme as isLight, isHighContrast, prefersReducedMotion } from "../platform/canvas.js";
+import { GameLoop } from "../platform/loop.js";
 
 const GAME = "kettletris";
 
@@ -56,6 +58,7 @@ const GAME = "kettletris";
     status.textContent = "Oops, you lost. The kettle boiled over.";
     feedback("Pressure dropped. Time for another steam-powered comeback.");
     redrawBoard();
+    window.dispatchEvent(new CustomEvent("kl-game-over"));
   }
 
   function afterLock(result) {
@@ -63,7 +66,7 @@ const GAME = "kettletris";
     if (result.clears) {
       beep("lock");
       flash();
-      shake = Math.min(10, result.clears * 3);
+      shake = prefersReducedMotion() ? 0 : Math.min(10, result.clears * 3);
       status.textContent =
         result.clears >= 4 ? "TETRIS! Massive clear." : `${result.clears} line${result.clears > 1 ? "s" : ""} cleared`;
     }
@@ -149,13 +152,8 @@ const GAME = "kettletris";
     return { cell, ox, oy, boardW, boardH, railX: ox + boardW + gap, railW, gap };
   }
 
-  function isLight() {
-    const mode = document.documentElement.getAttribute("data-theme") || "system";
-    return mode === "light" || (mode === "system" && window.matchMedia?.("(prefers-color-scheme: light)").matches);
-  }
-
   function palette() {
-    const hc = document.documentElement.classList.contains("game-contrast-high");
+    const hc = isHighContrast();
     if (hc)
       return { bg0: "#000", bg1: "#000", well: "rgba(255,255,255,.06)", frame: "#ffffff", grid: "rgba(255,255,255,.30)", fixed: "#f8fafc", ghost: "rgba(255,255,255,.9)", rail: "rgba(255,255,255,.06)", railLine: "#ffffff", label: "#ffffff", dim: "rgba(255,255,255,.8)" };
     if (isLight())
@@ -163,16 +161,7 @@ const GAME = "kettletris";
     return { bg0: "#0b0f15", bg1: "#06080c", well: "rgba(20,28,38,.55)", frame: "rgba(214,139,72,.45)", grid: "rgba(255,255,255,.055)", fixed: "#d08c55", ghost: "rgba(236,170,102,.32)", rail: "rgba(18,24,33,.6)", railLine: "rgba(95,212,197,.4)", label: "#e8edf4", dim: "rgba(232,237,244,.55)" };
   }
 
-  function rrect(px, py, w, h, r) {
-    const rad = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(px + rad, py);
-    ctx.arcTo(px + w, py, px + w, py + h, rad);
-    ctx.arcTo(px + w, py + h, px, py + h, rad);
-    ctx.arcTo(px, py + h, px, py, rad);
-    ctx.arcTo(px, py, px + w, py, rad);
-    ctx.closePath();
-  }
+  const rrect = (px, py, w, h, r) => roundedRect(ctx, px, py, w, h, r);
 
   function tile(px, py, size, base, opt = {}) {
     const pad = Math.max(1, size * 0.06);
@@ -332,7 +321,6 @@ const GAME = "kettletris";
     ctx.fillText(String(core.lines), railX + railW * 0.16, ry + rh * 0.86);
 
     ctx.restore();
-    requestAnimationFrame(draw);
   }
 
   startBtn?.addEventListener("click", () => {
@@ -345,5 +333,5 @@ const GAME = "kettletris";
   });
 
   reset();
-  draw();
+  new GameLoop(canvas).run(draw);
 })();
